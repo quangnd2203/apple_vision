@@ -10,7 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import 'input_image.dart';
 
-class PictureInfo{
+class PictureInfo {
   PictureInfo({
     this.file,
     this.error,
@@ -20,7 +20,7 @@ class PictureInfo{
   String? error;
 }
 
-class InsertCamera{
+class InsertCamera {
   bool restartStream = false;
   bool streaming = false;
 
@@ -49,68 +49,68 @@ class InsertCamera{
     DeviceOrientation.landscapeRight: 270,
   };
 
-  void dispose(){
+  void dispose() {
     controller?.dispose();
     controllerMacos?.destroy();
   }
 
   Future<void> setupCameras() async {
-    print("Setting up Cameras");
+    print("Setting up Cameras ${await Permission.camera.request()}");
     try {
-      if(await Permission.camera.request().isGranted){
-        if(Platform.isMacOS){
-          await CameraMacOS.instance.listDevices(deviceType: CameraMacOSDeviceType.video).then((value){
+      if (await Permission.camera.request().isGranted) {
+        if (Platform.isMacOS) {
+          await CameraMacOS.instance.listDevices(deviceType: CameraMacOSDeviceType.video).then((value) {
             _camerasMacos = value;
             cameraSides = _camerasMacos.length;
           });
           await _setupController(0);
-        }
-        else{
+        } else {
           print("Checking Cameras");
           _cameras = await availableCameras();
           cameraSides = _cameras.length;
-          await _setupController(cameraSides-1);
+          await _setupController(cameraSides - 1);
         }
+      }else{
+        openAppSettings();
       }
-    }on CameraException catch (_) {
+    } on CameraException catch (_) {
       print('error');
     }
     return;
   }
 
-  Future<void> _setupController(int side) async{
+  Future<void> _setupController(int side) async {
     _cameraIndex = side;
-    if(_cameras.isNotEmpty){
+    if (_cameras.isNotEmpty) {
       cameraRotation = _cameras[side].sensorOrientation;
     }
     print("Setting up Controller");
-    if(isReady){
+    if (isReady) {
       await controllerMacos?.destroy();
       await controller?.dispose();
     }
     isReady = false;
     try {
-      if(Platform.isMacOS){
+      if (Platform.isMacOS) {
         var value = await CameraMacOSPlatform.instance.initialize(
-          deviceId: null,
-          audioDeviceId: null,
-          cameraMacOSMode: CameraMacOSMode.video,
-          enableAudio: false,
-          resolution: PictureResolution.low,
-          pictureFormat: PictureFormat.jpg
-        );
+            deviceId: null,
+            audioDeviceId: null,
+            cameraMacOSMode: CameraMacOSMode.video,
+            enableAudio: false,
+            resolution: PictureResolution.low,
+            pictureFormat: PictureFormat.jpg);
         controllerMacos = CameraMacOSController(value!);
         isReady = true;
-      }
-      else{
+      } else {
         // initialize camera controllers.
         controller = CameraController(
-          _cameras[side], 
-          ResolutionPreset.low, 
+          _cameras[side],
+          ResolutionPreset.low,
           enableAudio: false,
+          fps: 24,
           imageFormatGroup: ImageFormatGroup.bgra8888,
         );
-        await controller!.initialize().then((_)async{
+        await controller!.initialize().then((_) async {
           aspectRatio = controller!.value.aspectRatio;
           isReady = true;
         });
@@ -120,6 +120,7 @@ class InsertCamera{
     }
     return;
   }
+
   Future stopFeed([int? camera]) async {
     await controller?.stopImageStream();
     await controller?.dispose();
@@ -127,7 +128,7 @@ class InsertCamera{
     _liveTimerMacos = null;
     isLive = false;
     controller = null;
-    if(camera != null){
+    if (camera != null) {
       _setupController(camera);
     }
   }
@@ -135,36 +136,37 @@ class InsertCamera{
   Future startLiveFeed(void Function(InputImage image)? returnImage) async {
     _returnImage = returnImage;
     isLive = true;
-    if(Platform.isMacOS){
-      controllerMacos?.startImageStream((p){
+    if (Platform.isMacOS) {
+      controllerMacos?.startImageStream((p) {
         imageSize ??= imageSize = Size(p.width.toDouble(), p.height.toDouble());
         InputImage i = InputImage.fromBytes(
-          bytes: p.bytes,
-          metadata: InputImageMetadata(
-            size: imageSize!,
-            rotation: InputImageRotation.rotation0deg,
-            format: InputImageFormat.bgra8888,
-            bytesPerRow: 0,
-          )
-        );
+            bytes: p.bytes,
+            metadata: InputImageMetadata(
+              size: imageSize!,
+              rotation: InputImageRotation.rotation0deg,
+              format: InputImageFormat.bgra8888,
+              bytesPerRow: 0,
+            ));
         _returnImage!(i);
       });
-    }
-    else{
+    } else {
       controller?.startImageStream(_processCameraImage);
     }
   }
+
   Future switchCamera(int camera) async {
     await stopFeed(camera);
-    if(isLive){
+    if (isLive) {
       await startLiveFeed(_returnImage);
     }
   }
+
   void _processCameraImage(CameraImage image) {
     final inputImage = _inputImageFromCameraImage(image);
     if (inputImage == null) return;
     _returnImage!(inputImage);
   }
+
   InputImage? _inputImageFromCameraImage(CameraImage image) {
     if (controller == null) return null;
 
@@ -200,26 +202,25 @@ class InsertCamera{
       ),
     );
   }
+
   Future<PictureInfo> takePicture() async {
     String? error;
     Uint8List? filePath;
-    if(Platform.isMacOS){
-      await controllerMacos?.takePicture().then((value){
-        if(value != null){
+    if (Platform.isMacOS) {
+      await controllerMacos?.takePicture().then((value) {
+        if (value != null) {
           filePath = value.bytes;
         }
       });
-    }
-    else{
-      if (!controller!.value.isInitialized){
+    } else {
+      if (!controller!.value.isInitialized) {
         error = 'Error: select a camera first.';
-      }
-      else{
-        if (controller!.value.isTakingPicture){
+      } else {
+        if (controller!.value.isTakingPicture) {
           error = "Taking Picture";
         }
         try {
-          await controller!.takePicture().then((value) async{
+          await controller!.takePicture().then((value) async {
             filePath = await value.readAsBytes();
           });
         } on CameraException catch (e) {
@@ -236,11 +237,7 @@ class InsertCamera{
 }
 
 class CameraSetup extends StatefulWidget {
-  const CameraSetup({
-    Key? key,
-    required this.camera,
-    this.size = const Size(640,480)
-  }):super(key: key);
+  const CameraSetup({Key? key, required this.camera, this.size = const Size(640, 480)}) : super(key: key);
 
   final InsertCamera camera;
   final Size size;
@@ -254,13 +251,13 @@ class _CameraSetupState extends State<CameraSetup> {
 
   late CameraController? controller;
   late CameraMacOSController? controllerMacos;
-  Offset offset = const Offset(0,0);
-  
+  Offset offset = const Offset(0, 0);
+
   @override
   void initState() {
-    controller = widget.camera.controller;
+      controller = widget.camera.controller;
     controllerMacos = widget.camera.controllerMacos;
-    if(controllerMacos != null){
+    if (controllerMacos != null) {
       // widget.camera.controllerMacos!.args = CameraMacOSArguments(
       //   size: widget.size,
       //   devices: widget.camera.controllerMacos!.args.devices,
@@ -269,10 +266,12 @@ class _CameraSetupState extends State<CameraSetup> {
     }
     super.initState();
   }
+
   @override
-  void dispose() async{
+  void dispose() async {
     super.dispose();
   }
+
   Widget _macosCamera() {
     return ClipRect(
       child: SizedBox(
@@ -292,21 +291,17 @@ class _CameraSetupState extends State<CameraSetup> {
 
   @override
   Widget build(BuildContext context) {
-    if(widget.camera.restartStream){
+    if (widget.camera.restartStream) {
       print('reset Camera Insert');
       widget.camera.restartStream = false;
     }
-    return Stack(
-      children:[
-        Align(
+    return Stack(children: [
+      Align(
           alignment: Alignment.center,
           child: SizedBox(
-            height: widget.size.height,
-            width: widget.size.width,
-            child: Platform.isMacOS?_macosCamera():CameraPreview(controller!)
-          )
-        ),
-      ]
-    );
+              height: widget.size.height,
+              width: widget.size.width,
+              child: Platform.isMacOS ? _macosCamera() : CameraPreview(controller!))),
+    ]);
   }
 }

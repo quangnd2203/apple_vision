@@ -24,7 +24,8 @@ class SelfieSegmentationData{
     this.format = PictureFormat.png,
     this.quality = SelfieQuality.fast,
     this.backGround,
-    this.orientation = ImageOrientation.up
+    this.orientation = ImageOrientation.up,
+    this.gamma = 1.0,
   });
   /// Image to be processed
   Uint8List image;
@@ -33,6 +34,7 @@ class SelfieSegmentationData{
   PictureFormat format;
   SelfieQuality quality;
   ImageOrientation orientation;
+  double gamma;
 }
 
 /// The [AppleVisionSelfieController] holds all the logic of this plugin,
@@ -51,7 +53,8 @@ class AppleVisionSelfieController {
           'format': data.format.name,
           'quality': data.quality.index,
           'background': data.backGround,
-          'orientation': data.orientation.name
+          'orientation': data.orientation.name,
+          'gamma': data.gamma,
         },
       );
       return _convertData(result);

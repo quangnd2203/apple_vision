@@ -12,7 +12,7 @@ dependencies:
   camera_macos:
     git:
       url: https://github.com/Knightro63/camera_macos.git
-  camera: ^0.10.5+2
+  camera: ^0.11.1
   apple_vision_selfie:
     path: ../../apple_vision_selfie
   cupertino_icons: ^1.0.2

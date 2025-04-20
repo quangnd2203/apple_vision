@@ -43,15 +43,16 @@ public class AppleVisionSelfiePlugin: NSObject, FlutterPlugin {
             let background:FlutterStandardTypedData? = arguments["background"] as? FlutterStandardTypedData ?? nil
             let pf = arguments["format"] as! String
             let orientation = arguments["orientation"] as? String ?? "downMirrored"
+            let gamma = arguments["gamma"] as? Double ?? 1.0
 
             #if os(iOS)
                 if #available(iOS 15.0, *) {
-                    return result(convertImage(Data(data.data),CGSize(width: width , height: height),pf,CIFormat.BGRA8,quality,background?.data,orientation))
+                    return result(convertImage(Data(data.data),CGSize(width: width , height: height),pf,CIFormat.BGRA8,quality,background?.data,orientation,gamma))
                 } else {
                     return result(FlutterError(code: "INVALID OS", message: "requires version 15.0", details: nil))
                 }
             #elseif os(macOS)
-                return result(convertImage(Data(data.data),CGSize(width: width , height: height), pf,CIFormat.ARGB8,quality,background?.data,orientation))
+                return result(convertImage(Data(data.data),CGSize(width: width , height: height), pf,CIFormat.ARGB8,quality,background?.data,orientation,gamma))
             #endif
         default:
             result(FlutterMethodNotImplemented)
@@ -62,7 +63,7 @@ public class AppleVisionSelfiePlugin: NSObject, FlutterPlugin {
     #if os(iOS)
     @available(iOS 15.0, *)
     #endif
-    func convertImage(_ data: Data,_ imageSize: CGSize,_ fileType: String,_ format: CIFormat,_ quality:Int,_ background: Data?,_ oriString: String) -> [String:Any?]{
+    func convertImage(_ data: Data,_ imageSize: CGSize,_ fileType: String,_ format: CIFormat,_ quality:Int,_ background: Data?,_ oriString: String, _ gamma: Double) -> [String:Any?]{
         let imageRequestHandler:VNImageRequestHandler
 
         var orientation:CGImagePropertyOrientation = CGImagePropertyOrientation.downMirrored
@@ -146,7 +147,8 @@ public class AppleVisionSelfiePlugin: NSObject, FlutterPlugin {
                                 case "bmp":
                                     uiImage = nil
                                 case "png":
-                                    uiImage = UIImage(ciImage: ciImage!).pngData()
+                                    let gammaImage = ciImage!.applyingFilter("CIGammaAdjust", parameters: ["inputPower": gamma])
+                                    uiImage = UIImage(ciImage: gammaImage).pngData()
                                 case "tiff":
                                     uiImage = nil
                                 default:
