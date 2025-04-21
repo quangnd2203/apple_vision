@@ -147,8 +147,8 @@ public class AppleVisionSelfiePlugin: NSObject, FlutterPlugin {
                                 case "bmp":
                                     uiImage = nil
                                 case "png":
-                                    let gammaImage = ciImage!.applyingFilter("CIGammaAdjust", parameters: ["inputPower": gamma])
-                                    uiImage = UIImage(ciImage: gammaImage).pngData()
+//                                     let gammaImage = ciImage!.applyingFilter("CIGammaAdjust", parameters: ["inputPower": gamma])
+                                    uiImage = UIImage(ciImage: ciImage!).pngData()
                                 case "tiff":
                                     uiImage = nil
                                 default:
